@@ -220,7 +220,7 @@ if (__name__ == "__main__"):
 
     print("summary produced")
     total_result.insert(0, ["classification", "max_tree_depth", "tp", "tn", "fp", "fn"])
-    writer = csv.writer(open("dtree_cat-2-20_depth-12_count-10_grouped.csv", "wt", encoding='ascii', newline=''),
+    writer = csv.writer(open("dtree_cat-2_depth-12_count-1-20_grouped.csv", "wt", encoding='ascii', newline=''),
                         delimiter=',')
     writer.writerows(total_result)
     print("file written")
