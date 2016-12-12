@@ -91,13 +91,13 @@ def svm(attribute_training_filename, label_training_filename,
     # set kernel
     # choices : # SVM_LINEAR / SVM_RBF / SVM_POLY / SVM_SIGMOID / SVM_CHI2 / SVM_INTER
 
-    svm.setKernel(cv2.ml.SVM_INTER)
+    svm.setKernel(cv2.ml.SVM_LINEAR)
     svm.setGamma(0.5)  # used for SVM_RBF kernel only, otherwise has no effect
     svm.setDegree(3)  # used for SVM_POLY kernel only, otherwise has no effect
 
     # set the relative weights importance of each class for use with penalty term
 
-    svm.setClassWeights(np.float32([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]))
+    # svm.setClassWeights(np.float32([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]))
     # svm.setClassWeights(np.float32([20, 20, 20, 20, 20, 20, 1, 1, 1, 1, 1, 1]))
 
     # define and train svm object
@@ -115,7 +115,7 @@ def svm(attribute_training_filename, label_training_filename,
     else:
 
         # use kernel specified above with kernel parameters set previously
-
+        print(cv2.ml.ROW_SAMPLE)
         svm.train(training_attributes, cv2.ml.ROW_SAMPLE, training_labels)
 
     end_train = time.clock()
@@ -207,8 +207,9 @@ if (__name__ == "__main__"):
     # For every cross fold validation
     for i in range(10):
         # Get results for every class vs all the others
-        x_fold_validations.append(svm("attributes_train" + str(i) + ".txt", "labels_train" + str(i) + ".txt",
-                                      "attributes_test" + str(i) + ".txt", "labels_test" + str(i) + ".txt"))
+        x_fold_validations.append(svm("attributes_train_grouped" + str(i) + ".txt", "labels_train_grouped" + str(i) +
+                                      ".txt", "attributes_test_grouped" + str(i) + ".txt", "labels_test_grouped" +
+                                      str(i) + ".txt"))
 
     # Create a dictionary of classification : [tp, tn, fp, fn]
     combined_dict = {'WALKING': [0, 0, 0, 0], 'WALKING_UPSTAIRS': [0, 0, 0, 0], 'WALKING_DOWNSTAIRS': [0, 0, 0, 0],
@@ -230,17 +231,5 @@ if (__name__ == "__main__"):
                               combined_dict[classification][2], combined_dict[classification][3]])
 
     total_summary.insert(0, ["classification", "tp", "tn", "fp", "fn"])
-    writer = csv.writer(open("SVM-Linear.csv", "wt", encoding='ascii', newline=''), delimiter=',')
+    writer = csv.writer(open("SVM-Linear-Grouped.csv", "wt", encoding='ascii', newline=''), delimiter=',')
     writer.writerows(total_summary)
-
-
-    # for i in range(10):
-    #     results.append(svm("attributes_train" + str(i) + ".txt", "labels_train"+str(i)+".txt", "attributes_test"+str(i)+".txt", "labels_test"+str(i)+".txt"))
-    #
-    # results.insert(0,[["classification", "tp", "tn", "fp", "fn"]])
-    #
-    # writer = csv.writer(open("SVM" + ".csv", "wt", encoding='ascii', newline=''), delimiter=',')
-    # for result in results:
-    #     writer.writerows(result)
-    #     writer.writerow([])
-    #     writer.writerow([])

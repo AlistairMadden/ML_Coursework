@@ -20,22 +20,18 @@ import numpy as np
 import time
 
 
-def knn(attribute_training_filename, label_training_filename, attribute_testing_filename, label_testing_filename,
-        data_path="./", k_range=range(1, 2)):
+def dtree(attribute_training_filename, label_training_filename,
+          attribute_testing_filename, label_testing_filename, data_path="./", max_depth=range(2, 21)):
     ########### Define classes
 
-    # define mapping of classes
-    classes = {'WALKING': 1, 'WALKING_UPSTAIRS': 2, 'WALKING_DOWNSTAIRS': 3, 'SITTING': 4, 'STANDING': 5, 'LAYING': 6,
-               'STAND_TO_SIT': 7, 'SIT_TO_STAND': 8, 'SIT_TO_LIE': 9, 'LIE_TO_SIT': 10, 'STAND_TO_LIE': 11,
-               'LIE_TO_STAND': 12}
-
-    # and the inverse of the classes dictionary
+    classes = {'WALKING': 1, 'WALKING_UPSTAIRS': 2, 'WALKING_DOWNSTAIRS': 3,
+               'SITTING': 4, 'STANDING': 5, 'LAYING': 6, 'STAND_TO_SIT': 7, 'SIT_TO_STAND': 8,
+               'SIT_TO_LIE': 9, 'LIE_TO_SIT': 10, 'STAND_TO_LIE': 11, 'LIE_TO_STAND': 12
+               }  # define mapping of classes
     inv_classes = {v: k for k, v in classes.items()}
 
     start_load = time.clock()
     ########### Load Data Set
-
-    # Training data - as currently split
 
     attribute_list = []
     label_list = []
@@ -52,7 +48,7 @@ def knn(attribute_training_filename, label_training_filename, attribute_testing_
         label_list.append(row[0])
 
     training_attributes = np.array(attribute_list).astype(np.float32)
-    training_labels = np.array(label_list).astype(np.float32)
+    training_labels = np.array(label_list).astype(np.int32)
 
     # Testing data - as currently split
 
@@ -71,70 +67,65 @@ def knn(attribute_training_filename, label_training_filename, attribute_testing_
         label_list.append(row[0])
 
     testing_attributes = np.array(attribute_list).astype(np.float32)
-    testing_labels = np.array(label_list).astype(np.float32)
+    testing_labels = np.array(label_list).astype(np.int32)
 
     end_load = time.clock()
 
-    print("File load time = " + str(end_load - start_load))
+    print("File load time: " + str(end_load - start_load) + "s")
 
-    start_train = time.clock()
-    ############ Perform Training -- k-NN
+    x_fold_validation = []
 
-    # define kNN object
+    for max_depth in depth_range:
 
-    knn = cv2.ml.KNearest_create()
+        depth_list = []
 
-    # set to use BRUTE_FORCE neighbour search as KNEAREST_KDTREE seems to  break
-    # on this data set (may not for others - http://code.opencv.org/issues/2661)
+        start_train = time.clock()
+        ############ Perform Training -- Decision Tree
 
-    knn.setAlgorithmType(cv2.ml.KNEAREST_BRUTE_FORCE)
+        # define decision tree object
 
-    # set default 3, can be changed at query time in predict() call
+        dtree = cv2.ml.DTrees_create()
 
-    knn.setDefaultK(k_range[-1])
+        # set parameters (changing may or may not change results)
 
-    # set up classification, turning off regression
+        dtree.setCVFolds(1)  # the number of cross-validation folds/iterations - fix at 1
+        dtree.setMaxCategories(2)  # max number of categories (use sub-optimal algorithm for larger numbers)
+        dtree.setMaxDepth(max_depth)  # max tree depth
+        dtree.setMinSampleCount(10)  # min sample count
+        dtree.setRegressionAccuracy(0)  # regression accuracy: N/A here
+        dtree.setTruncatePrunedTree(True)  # throw away the pruned tree branches
+        dtree.setUse1SERule(True)  # use 1SE rule => smaller tree
+        dtree.setUseSurrogates(False)  # compute surrogate split, no missing data
 
-    knn.setIsClassifier(True)
+        # specify that the types of our attributes is ordered with a categorical class output
+        # and we have 562 of them (561 attributes + 1 class label)
 
-    # perform training of k-NN
+        var_types = np.array([cv2.ml.VAR_NUMERICAL] * 561 + [cv2.ml.VAR_CATEGORICAL], np.uint8)
 
-    knn.train(training_attributes, cv2.ml.ROW_SAMPLE, training_labels)
+        # train decision tree object
+        dtree.train(cv2.ml.TrainData_create(training_attributes, cv2.ml.ROW_SAMPLE, training_labels, varType=var_types))
 
-    end_train = time.clock()
+        end_train = time.clock()
 
-    print("Training time = " + str(end_train - start_train))
+        print("Training time: " + str(end_train - start_train) + "s")
 
-    start_test = time.clock()
-    ############ Perform Testing -- k-NN
-
-    all_k_result = []
-
-    # for every value of k we wish to test
-    for k in k_range:
+        start_test = time.clock()
+        ############ Perform Testing -- Decision Tree
 
         # confusion matrix to store all results
         confusion_matrix = [[0 for x in range(12)] for y in range(12)]
 
         # for each testing example
-        for i in range(0, len(testing_attributes[:, 0])):
-            # perform k-NN prediction (i.e. classification)
+        for i in range(0, len(testing_attributes) - 2):
 
-            # (to get around some kind of OpenCV python interface bug, vertically stack the
-            #  example with a second row of zeros of the same size and type which is ignored).
+            # print(i)
 
-            sample = np.vstack((testing_attributes[i, :],
-                                np.zeros(len(testing_attributes[i, :])).astype(np.float32)))
+            _, result = dtree.predict(testing_attributes[i, :], cv2.ml.ROW_SAMPLE)
 
-            # now do the prediction returning the result, results (ignored) and also the responses
-            # + distances of each of the k nearest neighbours
-            # N.B. k at classification time must be < maxK from earlier training
+            # and for undocumented reasons take the first element of the resulting array
+            # as the result
 
-            _, results, neigh_response, distances = knn.findNearest(sample, k)
-
-            confusion_matrix[(int(results[0]) - 1)][(int(testing_labels[i]) - 1)] += 1
-
-        k_result = []
+            confusion_matrix[(int(result[0]) - 1)][(int(testing_labels[i]) - 1)] += 1
 
         # for every class
         for classification in range(12):
@@ -155,43 +146,43 @@ def knn(attribute_training_filename, label_training_filename, attribute_testing_
                 for actual in range(12):
 
                     # true negative
-                    if predicted != classification and actual != classification:
+                    if (predicted != classification and actual != classification):
                         tn += confusion_matrix[predicted][actual]
 
                     # false positive
-                    if predicted == classification and actual != classification:
+                    if (predicted == classification and actual != classification):
                         fp += confusion_matrix[predicted][actual]
 
                     # false negative
-                    if predicted != classification and actual == classification:
+                    if (predicted != classification and actual == classification):
                         fn += confusion_matrix[predicted][actual]
 
-            k_result.append([classification_name, k, tp, tn, fp, fn])
+            depth_list.append([classification_name, max_depth, tp, tn, fp, fn])
 
-        all_k_result.append(k_result)
+        end_test = time.clock()
 
-    end_test = time.clock()
+        print("Test time: " + str(end_test - start_test) + "s")
 
-    print("Testing time = " + str(end_test - start_test))
+        x_fold_validation.append(depth_list)
 
-    return all_k_result
+    return x_fold_validation
 
 
-if __name__ == "__main__":
+if (__name__ == "__main__"):
 
     # holds a unique row for a given k and classification
     x_fold_validations = []
 
-    k_range = range(60, 100)
+    depth_range = range(2, 6)
 
     x_fold_validation_range = range(0, 10)
 
     # For every cross fold validation
     for i in x_fold_validation_range:
-
         # Get results for every class vs all the others
-        x_fold_validation = knn("attributes_train" + str(i) + ".txt", "labels_train"+str(i)+".txt",
-                                "attributes_test"+str(i)+".txt", "labels_test"+str(i)+".txt", "./", k_range)
+        x_fold_validation = dtree("attributes_train_grouped" + str(i) + ".txt", "labels_train_grouped" + str(i) +
+                                  ".txt", "attributes_test_grouped" + str(i) + ".txt", "labels_test_grouped" + str(i) +
+                                  ".txt", "./", depth_range)
 
         print(x_fold_validation)
         print("XFV = " + str(i + 1))
@@ -206,16 +197,17 @@ if __name__ == "__main__":
 
     total_result = []
 
+    print(x_fold_validations)
+
     # combine(average) the results for each cross fold validation
     for classification in inv_classes:
-        for k in range(len(k_range)):
-            k_result = [inv_classes[classification], k_range[k], 0, 0, 0, 0]
+        for k in range(len(depth_range)):
+            k_result = [inv_classes[classification], depth_range[k], 0, 0, 0, 0]
 
             # to make indices work
             classification -= 1
 
             for i in x_fold_validation_range:
-
                 k_result[2] += x_fold_validations[i][k][classification][2]
                 k_result[3] += x_fold_validations[i][k][classification][3]
                 k_result[4] += x_fold_validations[i][k][classification][4]
@@ -226,6 +218,9 @@ if __name__ == "__main__":
             # reset index hack
             classification += 1
 
-    total_result.insert(0, ["classification", "k_value", "tp", "tn", "fp", "fn"])
-    writer = csv.writer(open("KNN_k_1-10_.csv", "wt", encoding='ascii', newline=''), delimiter=',')
+    print("summary produced")
+    total_result.insert(0, ["classification", "max_tree_depth", "tp", "tn", "fp", "fn"])
+    writer = csv.writer(open("dtree_cat-2_depth-2-5_count-10_grouped.csv", "wt", encoding='ascii', newline=''),
+                        delimiter=',')
     writer.writerows(total_result)
+    print("file written")
