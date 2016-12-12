@@ -21,7 +21,7 @@ import time
 
 
 def dtree(attribute_training_filename, label_training_filename,
-          attribute_testing_filename, label_testing_filename, data_path="./", max_depth=range(2, 21)):
+          attribute_testing_filename, label_testing_filename, data_path="./", categories=range(2, 21)):
     ########### Define classes
 
     classes = {'WALKING': 1, 'WALKING_UPSTAIRS': 2, 'WALKING_DOWNSTAIRS': 3,
@@ -75,9 +75,9 @@ def dtree(attribute_training_filename, label_training_filename,
 
     x_fold_validation = []
 
-    for max_depth in depth_range:
+    for max_categories in categories:
 
-        depth_list = []
+        category_list = []
 
         start_train = time.clock()
         ############ Perform Training -- Decision Tree
@@ -89,8 +89,8 @@ def dtree(attribute_training_filename, label_training_filename,
         # set parameters (changing may or may not change results)
 
         dtree.setCVFolds(1)  # the number of cross-validation folds/iterations - fix at 1
-        dtree.setMaxCategories(2)  # max number of categories (use sub-optimal algorithm for larger numbers)
-        dtree.setMaxDepth(max_depth)  # max tree depth
+        dtree.setMaxCategories(max_categories)  # max number of categories (use sub-optimal algorithm for larger numbers)
+        dtree.setMaxDepth(12)  # max tree depth
         dtree.setMinSampleCount(10)  # min sample count
         dtree.setRegressionAccuracy(0)  # regression accuracy: N/A here
         dtree.setTruncatePrunedTree(True)  # throw away the pruned tree branches
@@ -157,13 +157,13 @@ def dtree(attribute_training_filename, label_training_filename,
                     if (predicted != classification and actual == classification):
                         fn += confusion_matrix[predicted][actual]
 
-            depth_list.append([classification_name, max_depth, tp, tn, fp, fn])
+            category_list.append([classification_name, max_categories, tp, tn, fp, fn])
 
         end_test = time.clock()
 
         print("Test time: " + str(end_test - start_test) + "s")
 
-        x_fold_validation.append(depth_list)
+        x_fold_validation.append(category_list)
 
     return x_fold_validation
 
@@ -173,7 +173,7 @@ if (__name__ == "__main__"):
     # holds a unique row for a given k and classification
     x_fold_validations = []
 
-    depth_range = range(2, 21)
+    max_categories_range = range(2, 21)
 
     x_fold_validation_range = range(0, 10)
 
@@ -182,7 +182,7 @@ if (__name__ == "__main__"):
         # Get results for every class vs all the others
         x_fold_validation = dtree("attributes_train_grouped" + str(i) + ".txt", "labels_train_grouped" + str(i) +
                                   ".txt", "attributes_test_grouped" + str(i) + ".txt", "labels_test_grouped" + str(i) +
-                                  ".txt", "./", depth_range)
+                                  ".txt", "./", max_categories_range)
 
         print(x_fold_validation)
         print("XFV = " + str(i + 1))
@@ -201,8 +201,8 @@ if (__name__ == "__main__"):
 
     # combine(average) the results for each cross fold validation
     for classification in inv_classes:
-        for k in range(len(depth_range)):
-            k_result = [inv_classes[classification], depth_range[k], 0, 0, 0, 0]
+        for k in range(len(max_categories_range)):
+            k_result = [inv_classes[classification], max_categories_range[k], 0, 0, 0, 0]
 
             # to make indices work
             classification -= 1
@@ -220,7 +220,7 @@ if (__name__ == "__main__"):
 
     print("summary produced")
     total_result.insert(0, ["classification", "max_tree_depth", "tp", "tn", "fp", "fn"])
-    writer = csv.writer(open("dtree_cat-2_depth-2-20_count-10_grouped.csv", "wt", encoding='ascii', newline=''),
+    writer = csv.writer(open("dtree_cat-2-20_depth-12_count-10_grouped.csv", "wt", encoding='ascii', newline=''),
                         delimiter=',')
     writer.writerows(total_result)
     print("file written")
