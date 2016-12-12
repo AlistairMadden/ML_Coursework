@@ -167,7 +167,7 @@ if (__name__ == "__main__"):
 
     total_summary = []
 
-    for max_depth in range(2, 11):
+    for max_depth in range(2, 101):
 
         x_fold_validations = []
 
@@ -202,6 +202,6 @@ if (__name__ == "__main__"):
 
     print("summary produced")
     total_summary.insert(0, ["classification", "tp", "tn", "fp", "fn"])
-    writer = csv.writer(open("dtree_cat-2_depth-2-10_count-10.csv", "wt", encoding='ascii', newline=''), delimiter=',')
+    writer = csv.writer(open("dtree_cat-2_depth-2-100_count-10.csv", "wt", encoding='ascii', newline=''), delimiter=',')
     writer.writerows(total_summary)
     print("file written")
