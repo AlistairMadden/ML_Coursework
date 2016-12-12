@@ -17,10 +17,11 @@ import csv
 import cv2
 import os
 import numpy as np
+import time
 
 
 def dtree(attribute_training_filename, label_training_filename,
-          attribute_testing_filename, label_testing_filename, data_path="./"):
+          attribute_testing_filename, label_testing_filename, data_path="./", max_depth=1):
     ########### Define classes
 
     classes = {'WALKING': 1, 'WALKING_UPSTAIRS': 2, 'WALKING_DOWNSTAIRS': 3,
@@ -29,6 +30,7 @@ def dtree(attribute_training_filename, label_training_filename,
                }  # define mapping of classes
     inv_classes = {v: k for k, v in classes.items()}
 
+    start_load = time.clock()
     ########### Load Data Set
 
     attribute_list = []
@@ -67,6 +69,11 @@ def dtree(attribute_training_filename, label_training_filename,
     testing_attributes = np.array(attribute_list).astype(np.float32)
     testing_labels = np.array(label_list).astype(np.int32)
 
+    end_load = time.clock()
+
+    print("File load time: " + str(end_load - start_load) + "s")
+
+    start_train = time.clock()
     ############ Perform Training -- Decision Tree
 
     # define decision tree object
@@ -76,8 +83,8 @@ def dtree(attribute_training_filename, label_training_filename,
     # set parameters (changing may or may not change results)
 
     dtree.setCVFolds(1)  # the number of cross-validation folds/iterations - fix at 1
-    dtree.setMaxCategories(12)  # max number of categories (use sub-optimal algorithm for larger numbers)
-    dtree.setMaxDepth(30)  # max tree depth
+    dtree.setMaxCategories(2)  # max number of categories (use sub-optimal algorithm for larger numbers)
+    dtree.setMaxDepth(max_depth)  # max tree depth
     dtree.setMinSampleCount(10)  # min sample count
     dtree.setRegressionAccuracy(0)  # regression accuracy: N/A here
     dtree.setTruncatePrunedTree(True)  # throw away the pruned tree branches
@@ -92,6 +99,11 @@ def dtree(attribute_training_filename, label_training_filename,
     # train decision tree object
     dtree.train(cv2.ml.TrainData_create(training_attributes, cv2.ml.ROW_SAMPLE, training_labels, varType=var_types))
 
+    end_train = time.clock()
+
+    print("Training time: " + str(end_train - start_train) + "s")
+
+    start_test = time.clock()
     ############ Perform Testing -- Decision Tree
 
     # confusion matrix to store all results
@@ -144,6 +156,10 @@ def dtree(attribute_training_filename, label_training_filename,
 
         result.append([classification_name, tp, tn, fp, fn])
 
+    end_test = time.clock()
+
+    print("Test time: " + str(end_test - start_test) + "s")
+
     return result
 
 
@@ -151,35 +167,41 @@ if (__name__ == "__main__"):
 
     total_summary = []
 
-    x_fold_validations = []
+    for max_depth in range(2, 11):
 
-    # x_fold_validations = [[["WALKING", 1, 2, 3, 4, 5], ["WALKING", 1, 2, 3, 4, 5], ["STANDING", 1, 2, 3, 4, 5]]]
-    # For every cross fold validation
-    for i in range(10):
-        # Get results for every class vs all the others
-        x_fold_validations.append(dtree("attributes_train" + str(i) + ".txt", "labels_train" + str(i) + ".txt",
-                                        "attributes_test" + str(i) + ".txt", "labels_test" + str(i) + ".txt"))
+        x_fold_validations = []
 
-    # Create a dictionary of classification : [tp, tn, fp, fn]
-    combined_dict = {'WALKING': [0, 0, 0, 0], 'WALKING_UPSTAIRS': [0, 0, 0, 0], 'WALKING_DOWNSTAIRS': [0, 0, 0, 0],
-                     'SITTING': [0, 0, 0, 0], 'STANDING': [0, 0, 0, 0], 'LAYING': [0, 0, 0, 0],
-                     'STAND_TO_SIT': [0, 0, 0, 0], 'SIT_TO_STAND': [0, 0, 0, 0],
-                     'SIT_TO_LIE': [0, 0, 0, 0], 'LIE_TO_SIT': [0, 0, 0, 0], 'STAND_TO_LIE': [0, 0, 0, 0],
-                     'LIE_TO_STAND': [0, 0, 0, 0]
-                     }
-    for x_fold_validation in x_fold_validations:
-        for classification in x_fold_validation:
-            stats = combined_dict[classification[0]]
-            # for each tp, tn, fp, fn
-            for stat in range(len(stats)):
-                stats[stat] += classification[stat + 1]
-            combined_dict[classification[0]] = stats
+        # x_fold_validations = [[["WALKING", 1, 2, 3, 4, 5], ["WALKING", 1, 2, 3, 4, 5], ["STANDING", 1, 2, 3, 4, 5]]]
+        # For every cross fold validation
+        for i in range(10):
+            # Get results for every class vs all the others
+            x_fold_validations.append(dtree("attributes_train" + str(i) + ".txt", "labels_train" + str(i) + ".txt",
+                                            "attributes_test" + str(i) + ".txt", "labels_test" + str(i) + ".txt", "./",
+                                            max_depth))
 
-    for classification in combined_dict:
-        total_summary.append([classification, combined_dict[classification][0], combined_dict[classification][1],
-                              combined_dict[classification][2], combined_dict[classification][3]])
+
+        # Create a dictionary of classification : [tp, tn, fp, fn]
+        combined_dict = {'WALKING': [0, 0, 0, 0], 'WALKING_UPSTAIRS': [0, 0, 0, 0], 'WALKING_DOWNSTAIRS': [0, 0, 0, 0],
+                         'SITTING': [0, 0, 0, 0], 'STANDING': [0, 0, 0, 0], 'LAYING': [0, 0, 0, 0],
+                         'STAND_TO_SIT': [0, 0, 0, 0], 'SIT_TO_STAND': [0, 0, 0, 0],
+                         'SIT_TO_LIE': [0, 0, 0, 0], 'LIE_TO_SIT': [0, 0, 0, 0], 'STAND_TO_LIE': [0, 0, 0, 0],
+                         'LIE_TO_STAND': [0, 0, 0, 0]
+                         }
+        for x_fold_validation in x_fold_validations:
+            for classification in x_fold_validation:
+                stats = combined_dict[classification[0]]
+                # for each tp, tn, fp, fn
+                for stat in range(len(stats)):
+                    stats[stat] += classification[stat + 1]
+                combined_dict[classification[0]] = stats
+
+        for classification in combined_dict:
+            total_summary.append([classification, max_depth, combined_dict[classification][0],
+                                  combined_dict[classification][1], combined_dict[classification][2],
+                                  combined_dict[classification][3]])
+
     print("summary produced")
     total_summary.insert(0, ["classification", "tp", "tn", "fp", "fn"])
-    writer = csv.writer(open("dtree_cat-12_depth-30_count-10.csv", "wt", encoding='ascii', newline=''), delimiter=',')
+    writer = csv.writer(open("dtree_cat-2_depth-2-10_count-10.csv", "wt", encoding='ascii', newline=''), delimiter=',')
     writer.writerows(total_summary)
     print("file written")
