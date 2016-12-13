@@ -55,48 +55,6 @@ def combine():
     return attribute_list
 
 
-def KXFV_alise(entry_list):
-    ########### randomize (different order for every file loaded)
-
-    random.shuffle(entry_list)
-
-    ########### split back into attributes and labels
-
-    attribute_list = []
-    label_list = []
-
-    for row in entry_list:
-        # attributes in columns 0-561
-        attribute_list.append(list(row[i] for i in (range(0, 561))))
-        label_list.append(list(row[i] for i in (range(561, 562))))
-
-    return [attribute_list, label_list]
-
-
-def split_test_train(k, attribute_list, label_list):
-    ########### Write Data Set - Example
-
-    # write first N% of the entries to first file
-
-    N = 30.0
-
-    writer = csv.writer(open("attributes_test" + str(k) + ".txt", "wt", encoding='ascii', newline=''), delimiter=' ')
-    writer.writerows(attribute_list[0:int(math.floor(len(attribute_list) * (N / 100.0)))])
-
-    writer = csv.writer(open("labels_test" + str(k) + ".txt", "wt", encoding='ascii', newline=''), delimiter=' ')
-    writer.writerows(label_list[0:int(math.floor(len(label_list) * (N / 100.0)))])
-
-    # write the remaining (100-N)% of the entries of the second file
-
-    writer = csv.writer(open("attributes_train" + str(k) + ".txt", "wt", encoding='ascii', newline=''), delimiter=' ')
-    writer.writerows(attribute_list[int(math.floor(len(attribute_list) * (N / 100.0))):len(attribute_list)])
-
-    writer = csv.writer(open("labels_train" + str(k) + ".txt", "wt", encoding='ascii', newline=''), delimiter=' ')
-    writer.writerows(label_list[int(math.floor(len(label_list) * (N / 100.0))):len(label_list)])
-
-    #####################################################################
-
-
 if __name__ == "__main__":
     entry_list = combine()
 
@@ -108,15 +66,19 @@ if __name__ == "__main__":
         attribute_testing_list = []
         labels_training_list = []
         labels_testing_list = []
+        id_training_list = []
+        id_testing_list = []
 
         for entry in entry_list:
             # if in training set, else in test set
             if int(entry[-1]) in random_subjects:
                 attribute_training_list.append(list(entry[i] for i in (range(0, 561))))
                 labels_training_list.append([entry[-2]])
+                id_training_list.append([entry[-1]])
             else:
                 attribute_testing_list.append(list(entry[i] for i in (range(0, 561))))
                 labels_testing_list.append([entry[-2]])
+                id_testing_list.append([entry[-1]])
 
         writer = csv.writer(open("attributes_test_grouped" + str(k) + ".txt", "wt", encoding='ascii', newline=''),
                             delimiter=' ')
@@ -133,3 +95,11 @@ if __name__ == "__main__":
         writer = csv.writer(open("labels_train_grouped" + str(k) + ".txt", "wt", encoding='ascii', newline=''),
                             delimiter=' ')
         writer.writerows(labels_training_list)
+
+        writer = csv.writer(open("ids_test_grouped" + str(k) + ".txt", "wt", encoding='ascii', newline=''),
+                            delimiter=' ')
+        writer.writerows(id_testing_list)
+
+        writer = csv.writer(open("ids_train_grouped" + str(k) + ".txt", "wt", encoding='ascii', newline=''),
+                            delimiter=' ')
+        writer.writerows(id_training_list)
