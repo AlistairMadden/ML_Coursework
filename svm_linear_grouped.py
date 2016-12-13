@@ -1,7 +1,7 @@
 #####################################################################
 
-# Usage: Run after KXFV_data_generator.py has been run. Range of sample counts configurable from the main section of
-# this file.
+# Usage: Run after KXFV_data_generator_grouped.py has been run. Range of sample counts configurable from the main
+# section of this file.
 
 # Author : Alistair Madden, alistair.madden@durham.ac.uk
 #          using significant portions of code produced by
@@ -191,12 +191,12 @@ if __name__ == "__main__":
 
     x_fold_validations = []
 
-    # x_fold_validations = [[["WALKING", 1, 2, 3, 4, 5], ["WALKING", 1, 2, 3, 4, 5], ["STANDING", 1, 2, 3, 4, 5]]]
     # For every cross fold validation
     for i in range(10):
         # Get results for every class vs all the others
-        x_fold_validations.append(svm("attributes_train" + str(i) + ".txt", "labels_train" + str(i) + ".txt",
-                                      "attributes_test" + str(i) + ".txt", "labels_test" + str(i) + ".txt"))
+        x_fold_validations.append(svm("attributes_train_grouped" + str(i) + ".txt", "labels_train_grouped" + str(i) +
+                                      ".txt", "attributes_test_grouped" + str(i) + ".txt", "labels_test_grouped" +
+                                      str(i) + ".txt"))
 
     # Create a dictionary of classification : [tp, tn, fp, fn]
     combined_dict = {'WALKING': [0, 0, 0, 0], 'WALKING_UPSTAIRS': [0, 0, 0, 0], 'WALKING_DOWNSTAIRS': [0, 0, 0, 0],

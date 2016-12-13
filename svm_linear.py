@@ -191,7 +191,6 @@ if __name__ == "__main__":
 
     x_fold_validations = []
 
-    # x_fold_validations = [[["WALKING", 1, 2, 3, 4, 5], ["WALKING", 1, 2, 3, 4, 5], ["STANDING", 1, 2, 3, 4, 5]]]
     # For every cross fold validation
     for i in range(10):
         # Get results for every class vs all the others
