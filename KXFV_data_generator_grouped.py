@@ -113,10 +113,10 @@ if __name__ == "__main__":
             # if in training set, else in test set
             if int(entry[-1]) in random_subjects:
                 attribute_training_list.append(list(entry[i] for i in (range(0, 561))))
-                labels_training_list.append(list(entry[-2]))
+                labels_training_list.append([entry[-2]])
             else:
                 attribute_testing_list.append(list(entry[i] for i in (range(0, 561))))
-                labels_testing_list.append(list(entry[-2]))
+                labels_testing_list.append([entry[-2]])
 
         writer = csv.writer(open("attributes_test_grouped" + str(k) + ".txt", "wt", encoding='ascii', newline=''),
                             delimiter=' ')
