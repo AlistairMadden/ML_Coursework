@@ -100,7 +100,7 @@ def split_test_train(k, attribute_list, label_list):
 if __name__ == "__main__":
     entry_list = combine()
 
-    for k in range(1, 11):
+    for k in range(0, 10):
 
         random_subjects = random.sample(range(1, 31), 20)
 
