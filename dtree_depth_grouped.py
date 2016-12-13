@@ -1,11 +1,11 @@
 #####################################################################
 
-# Example : load HAPT data set only
-# basic illustrative python script
+# Usage: Run after KXFV_data_generator_grouped.py has been run. Range of sample counts configurable from the main
+# section of this file.
 
-# For use with test / training datasets : HAPT-data-set-DU
-
-# Author : Toby Breckon, toby.breckon@durham.ac.uk
+# Author : Alistair Madden, alistair.madden@durham.ac.uk
+#          using significant portions of code produced by
+#          Toby Breckon, toby.breckon@durham.ac.uk
 
 # Copyright (c) 2014 / 2016 School of Engineering & Computing Science,
 #                    Durham University, UK
@@ -21,7 +21,7 @@ import time
 
 
 def dtree(attribute_training_filename, label_training_filename,
-          attribute_testing_filename, label_testing_filename, data_path="./", max_depth=range(2, 21)):
+          attribute_testing_filename, label_testing_filename, data_path="./", depth_range=range(12, 13)):
     ########### Define classes
 
     classes = {'WALKING': 1, 'WALKING_UPSTAIRS': 2, 'WALKING_DOWNSTAIRS': 3,
@@ -131,7 +131,6 @@ def dtree(attribute_training_filename, label_training_filename,
         for classification in range(12):
 
             # reset metrics
-            tp = 0  # predicted class and actual is classification
             tn = 0  # predicted not classification and actual is not classification
             fp = 0  # predicted as classification, but actual is different
             fn = 0  # predicted as not classification, but actual is classification
@@ -146,15 +145,15 @@ def dtree(attribute_training_filename, label_training_filename,
                 for actual in range(12):
 
                     # true negative
-                    if (predicted != classification and actual != classification):
+                    if predicted != classification and actual != classification:
                         tn += confusion_matrix[predicted][actual]
 
                     # false positive
-                    if (predicted == classification and actual != classification):
+                    if predicted == classification and actual != classification:
                         fp += confusion_matrix[predicted][actual]
 
                     # false negative
-                    if (predicted != classification and actual == classification):
+                    if predicted != classification and actual == classification:
                         fn += confusion_matrix[predicted][actual]
 
             depth_list.append([classification_name, max_depth, tp, tn, fp, fn])
@@ -168,7 +167,7 @@ def dtree(attribute_training_filename, label_training_filename,
     return x_fold_validation
 
 
-if (__name__ == "__main__"):
+if __name__ == "__main__":
 
     # holds a unique row for a given k and classification
     x_fold_validations = []
@@ -184,8 +183,9 @@ if (__name__ == "__main__"):
                                   ".txt", "attributes_test_grouped" + str(i) + ".txt", "labels_test_grouped" + str(i) +
                                   ".txt", "./", depth_range)
 
-        print(x_fold_validation)
+        print()
         print("XFV = " + str(i + 1))
+        print()
 
         x_fold_validations.append(x_fold_validation)
 
@@ -196,8 +196,6 @@ if (__name__ == "__main__"):
     inv_classes = {v: k for k, v in classes.items()}
 
     total_result = []
-
-    print(x_fold_validations)
 
     # combine(average) the results for each cross fold validation
     for classification in inv_classes:

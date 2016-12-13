@@ -1,11 +1,11 @@
 #####################################################################
 
-# Example : load HAPT data set only
-# basic illustrative python script
+# Usage: Run after KXFV_data_generator.py has been run. Range of sample counts configurable from the main section of
+# this file.
 
-# For use with test / training datasets : HAPT-data-set-DU
-
-# Author : Toby Breckon, toby.breckon@durham.ac.uk
+# Author : Alistair Madden, alistair.madden@durham.ac.uk
+#          using significant portions of code produced by
+#          Toby Breckon, toby.breckon@durham.ac.uk
 
 # Copyright (c) 2014 / 2016 School of Engineering & Computing Science,
 #                    Durham University, UK
@@ -140,7 +140,6 @@ def knn(attribute_training_filename, label_training_filename, attribute_testing_
         for classification in range(12):
 
             # reset metrics
-            tp = 0  # predicted class and actual is classification
             tn = 0  # predicted not classification and actual is not classification
             fp = 0  # predicted as classification, but actual is different
             fn = 0  # predicted as not classification, but actual is classification
@@ -182,7 +181,7 @@ if __name__ == "__main__":
     # holds a unique row for a given k and classification
     x_fold_validations = []
 
-    k_range = range(60, 100)
+    k_range = range(1, 3)
 
     x_fold_validation_range = range(0, 10)
 
@@ -193,8 +192,9 @@ if __name__ == "__main__":
         x_fold_validation = knn("attributes_train" + str(i) + ".txt", "labels_train"+str(i)+".txt",
                                 "attributes_test"+str(i)+".txt", "labels_test"+str(i)+".txt", "./", k_range)
 
-        print(x_fold_validation)
+        print()
         print("XFV = " + str(i + 1))
+        print()
 
         x_fold_validations.append(x_fold_validation)
 
@@ -227,5 +227,5 @@ if __name__ == "__main__":
             classification += 1
 
     total_result.insert(0, ["classification", "k_value", "tp", "tn", "fp", "fn"])
-    writer = csv.writer(open("KNN_k_1-10_.csv", "wt", encoding='ascii', newline=''), delimiter=',')
+    writer = csv.writer(open("KNN_k_1-50.csv", "wt", encoding='ascii', newline=''), delimiter=',')
     writer.writerows(total_result)
